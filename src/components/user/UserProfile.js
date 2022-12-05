@@ -33,9 +33,7 @@ class UserProfile extends Component {
                                 <h4 className="col-10 mx-auto text-center">
                                     <strong>Address </strong>
                                     <strong>
-                                    <p>{value.userDetails.houseNumber + value.userDetails.street } </p>
-                                    
-                                    <p>{value.userDetails.city + value.userDetails.zipcode }</p>
+                                    <p>{value.userDetails.shipping_info}</p>
                                     </strong>
                                 </h4>
 

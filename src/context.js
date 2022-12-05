@@ -25,7 +25,9 @@ class ProductProvider extends Component {
         cartTax: 0,
         cartTotal:0,
         userDetails: {},
-        status: false
+        status: false,
+        sellerDetails: {},
+        sellerOrderDetails: []
     }
 
     componentDidMount(){
@@ -38,6 +40,12 @@ class ProductProvider extends Component {
     setUser=(user)=>{
         this.setState(()=>{
             return {userDetails : user}
+        })
+    }
+
+    setSeller=(seller)=>{
+        this.setState(()=>{
+            return {sellerDetails : seller}
         })
     }
     
@@ -60,6 +68,15 @@ class ProductProvider extends Component {
             product = this.state.kids.find( item => item.id === id);
         }
         return product;
+    }
+
+    getOrderItem = (id) => {
+        var order;
+        console.log("id in getOrderItem", id)
+        if(order == null){
+         order = this.state.sellerOrderDetails.find( item => item.id === id);
+        }
+        return order;
     }
 
     getItemCart = (id) => {
@@ -155,8 +172,11 @@ class ProductProvider extends Component {
         const tempProducts = [...this.state.cart]
         const i = tempProducts.indexOf(this.getItemCart(id))
         const product = tempProducts[i]
-        product.count++
-        product.total = product.price*product.count
+        console.log("Cart pid", id)
+
+        console.log("Cart ", tempProducts)
+        product.quantity++
+        product.order_price = product.price*product.quantity
         this.setState(()=>{
             return {cart : tempProducts}
         },()=>{this.addTotals()})
@@ -166,9 +186,9 @@ class ProductProvider extends Component {
         const tempProducts = [...this.state.cart]
         const i = tempProducts.indexOf(this.getItemCart(id))
         const product = tempProducts[i]
-        if(product.count > 1){
-            product.count--
-            product.total = product.price*product.count
+        if(product.quantity > 1){
+            product.quantity--
+            product.order_price = product.price*product.quantity
         }
         this.setState(()=>{
             return {cart : tempProducts}
@@ -193,15 +213,15 @@ class ProductProvider extends Component {
 
     addTotals= ()=>{
         let subTotal = 0
-        this.state.cart.map(item =>(subTotal += item.total))
+        this.state.cart.map(item =>(subTotal += item.order_price))
         const tempTax = subTotal * 0.1
         const tax= parseFloat(tempTax.toFixed(2))
-        const total = subTotal + tax
+        const order_price = subTotal + tax
         this.setState(()=>{
             return {
                 cartSubtotal:subTotal,
                 cartTax: tax,
-                cartTotal:total
+                cartTotal:order_price
             }
         })
     }
@@ -248,12 +268,14 @@ class ProductProvider extends Component {
         let tempProducts = [...this.state.products];
         const index = tempProducts.indexOf(this.getItem(id))
         const product = tempProducts[index]
-        product.count = 1;
-        product.sellerId=seller.sellerId;
+        product.quantity = 1;
+        product.sellerId=seller.id;
         //product.price=seller.
-        product.price=effPrice
-        const price = product.price
-        product.total = price;
+        product.price = effPrice
+        product.order_price = effPrice*product.quantity
+
+        // console.log("addToCart", id, seller, effPrice)
+
         this.setState(()=>{
             return {cart:[...this.state.cart , product]}
         },()=>{this.addTotals()})
@@ -359,7 +381,6 @@ class ProductProvider extends Component {
         for (const pair of form_data) {
             data.append(pair[0], pair[1]);
         }
-        
 
         fetch(`http://localhost:8000/customers/getOrders/${this.state.userDetails.id}`,{
                                   method:'get'
@@ -374,16 +395,56 @@ class ProductProvider extends Component {
                  }) 
     }
 
+    setSellerOrders = () => {
+        
+            console.log("sellerDetails details", this.state.sellerDetails)
+    
+            fetch(`http://localhost:8000/sellers/getOrders/${this.state.sellerDetails.id}`,{
+                                      method:'get'
+                                  })
+                 .then((res) => {
+                     return res.json()
+                    })
+                  .then((json) => {                    
+                        this.setState(()=>{
+                            return { sellerOrderDetails: json }
+                         })
+                     }) 
+    }
+
+    updateOrderStatus = (e) =>{
+        console.log("select event ", e.target.value)
+        const order_id = e.target.value.split("-");
+        console.log(order_id[0], order_id[1])
+        let order = {}
+        order["id"] = order_id[0]
+        order["status"] = order_id[1]
+
+        fetch(`http://localhost:8000/orders/updateOrderStatus/?orderId=${order_id[0]}&status=${order_id[1]}`,{
+              method: "GET"
+            //   headers: {
+            //     'Accept': 'application/json',
+            //     'Content-Type': 'application/json'
+            //   },
+            //   body: JSON.stringify(order)
+         })
+         this.setSellerOrders()
+        
+    }
+
     checkout = (payment) =>{
       
         var date = new Date()
         var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         var dateOfOrder = date.getDate()+" " + months[date.getMonth()] +" "+date.getFullYear()
-        var orders = [...this.state.cart]
+        var orders = Array.from([...this.state.cart])
          orders.map(product=>{
-                product.customerId = this.state.userDetails.customerID
+                product.customerId = this.state.userDetails.id
                 product.payment = payment
                 product.dateOfOrder = dateOfOrder
+                product.productId = product.id
+                // product
+                // delete product.id
                 return null
          })
 
@@ -399,10 +460,15 @@ class ProductProvider extends Component {
             data.append(pair[0], pair[1]);
         }
         
+        console.log("orders,",orders)
 
          fetch('http://localhost:8000/placeOrder/insert',{
               method: "POST",
-              body: data  
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(orders)
          })
         }
 
@@ -427,15 +493,19 @@ class ProductProvider extends Component {
                     clearCart: this.clearCart,
                     changeStatus:this.changeStatus,
                     setUser: this.setUser,
+                    setSeller: this.setSeller,
                     checkout: this.checkout,
                     getItem:this.getItem,
                     setOrders:this.setOrders,
+                    setSellerOrders: this.setSellerOrders,
                     handleReview:this.handleReview,
                     getReviews:this.getReviews,
                     getSellers:this.getSellers,
                     changeProducts:this.changeProducts,
                     checkCart:this.checkCart,
-                    closeModalTransaction:this.closeModalTransaction
+                    closeModalTransaction:this.closeModalTransaction,
+                    getOrderItem: this.getOrderItem,
+                    updateOrderStatus: this.updateOrderStatus
                 }
             }>
                 {this.props.children}
