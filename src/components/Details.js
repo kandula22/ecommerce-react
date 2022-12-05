@@ -34,7 +34,7 @@ class Details extends Component {
                                 </h4>
                                 <h4 className="text-blue">
                                     <strong>
-                                    price: <span>INR</span>{price}
+                                    price: <span>$ </span>{price}
                                     </strong>
                                 </h4>
                                 <p className="text-capitalize font-weight-bold mt-3 mb-0">
@@ -100,7 +100,7 @@ class Details extends Component {
 
                                                 </div>
                                                 <div className="col-2">
-                                                <h4 className="mt-3 mb-2 ml-3 mr-3">INR {seller.price}</h4>
+                                                <h4 className="mt-3 mb-2 ml-3 mr-3">$  {seller.price}</h4>
 
                                                 </div>
                                                 <div className="col-2">
