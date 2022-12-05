@@ -4,7 +4,7 @@ import {Link} from 'react-router-dom';
 
 export default function OrderItems({item,value}){
 
-    const {name,productId,order_price,created_time,payment} = item
+    const {name,productId,order_price,created_time,payment, status} = item
     console.log("Item OrderItem", item);
 
     return( 
@@ -37,9 +37,9 @@ export default function OrderItems({item,value}){
            <div className="col-10 mx-auto col-lg-2">
                {created_time}
             </div>
-           {/* <div className="col-2 mx-auto col-lg-2">
-                {payment}
-           </div> */}
+           <div className="col-2 mx-auto col-lg-2">
+                {status}
+           </div>
 
        </div>
            {/* <Reviews item={item} value={value}/> */}
